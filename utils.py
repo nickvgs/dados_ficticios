@@ -90,23 +90,56 @@ def query_mysql(table, keysdb:list):
                 connection.close()
                 print("MySQL connection is closed")
     return(dados)
-# %%    
-keysdb = ['localhost','db_unidade3','root','admin']
 
-df = query_mysql('clientes', keysdb )
+# %%
+
+def send_mysql(table, df, keysdb, action="INSERT"):
+
+    # Create a connection to the database
+    connection = conexao(keysdb)
+
+    # Convert the dataframe to a list of dictionaries
+    data = df.to_dict(orient='records')
+    params = [tuple(row.values()) for row in data]
+
+    placeholders = ', '.join(['%s'] * len(df.columns))
+
+    # Perform the update
+    with connection.cursor() as cursor:
+        if action == "UPSERT":
+            columns = [column for column in df.columns if column != "id"]
+            sql = f'''
+                INSERT INTO {table} ({', '.join(df.columns)}) 
+                VALUES ({placeholders}) 
+                ON DUPLICATE KEY UPDATE {', '.join([f'{column}=VALUES({column})' for column in columns])}
+            '''
+            # print(sql)
+            # print(params)
+            cursor.executemany(sql, params)
+
+        elif action == "INSERT":
+            
+            sql = f"INSERT INTO {table} ({', '.join(df.columns)}) VALUES ({placeholders})"
+            cursor.executemany(sql, params)
+
+            # print(sql)
+            # print(params)
+        else:
+            raise Exception("Invalid action")
+
+    # Commit the changes
+    connection.commit()
+
+    # Close the connection
+    connection.close()
 
 
 # %%
-def faker_insert(qt):
-    # %%
-    # Dados para Conexão 
-    keysdb = ['localhost','db_unidade3','root','admin']
-
-
-    # %%
+def faker_generate(qt:int, output):
+    
     # Loop para criar as linhas de dados e adicionas a uma lista
     dados = []
-    for i in range({qt}):
+    for i in range(qt):
         data_atualizacao = faker.date()
         nome = faker.name()
         telefone = faker.phone_number()
@@ -118,7 +151,6 @@ def faker_insert(qt):
         estado = faker.state()
         estado_sigla = faker.estado_sigla()
         cargo = faker.job()
-        salary = faker.decimal()
         # coments = faker.text()
         # ipv4 = faker.ipv4_private()
         
@@ -135,8 +167,8 @@ def faker_insert(qt):
                     cidade, 
                     estado, 
                     estado_sigla,
-                    cargo,
-                    salary )
+                    cargo
+                    )
 
         dados.append(dados_faker)
 
@@ -152,17 +184,20 @@ def faker_insert(qt):
             'cidade',
             'estado', 
             'estado_sigla',
-            'cargo',
-            'salary'
+            'cargo'
             ]
 
-    # Criando o DF e nomeando as colunas
+    # # Criando o DF e nomeando as colunas
     df = pd.DataFrame(dados, columns=cols)
-    df
-    # %%
-    insert_mysql('clientes',df, keysdb)
+
+    if output == 'LISTA':
+        return(dados)
+    elif output == 'PANDAS':
+        return(df)
+
+
 
 # %%
-keysdb = ['localhost','db_unidade3','root','admin']
-dados = query_mysql('clientes',keysdb )
+
+
 # %%
