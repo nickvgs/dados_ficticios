@@ -145,20 +145,20 @@ def generate_clients(qt:int, output):
     # Loop para criar as linhas de dados e adicionas a uma lista
     dados = []
     for i in range(qt):
-        data_atualizacao = faker.date()
+        data_atualizacao = (faker.date_of_birth(maximum_age=1)).strftime("%Y-%m-%d")
         nome = faker.name()
         telefone = faker.phone_number()
         email = faker.ascii_free_email()
-        data_nascimento = faker.date()
+        data_nascimento = (faker.date_of_birth(maximum_age=80)).strftime("%Y-%m-%d")
         rua = faker.street_address()
         bairro = faker.bairro()
         cidade = faker.administrative_unit()
-        estado = faker.state()
-        estado_sigla = faker.estado_sigla()
         cargo = faker.job()
         salario = round(random.uniform(1300.15, 6300.89), 2)
         
-        
+        estadoSigla = faker.estado()
+        estado_sigla = estadoSigla[0]
+        estado = estadoSigla[1]
         
         dados_faker = (
                     data_atualizacao,
@@ -169,7 +169,7 @@ def generate_clients(qt:int, output):
                     rua,
                     bairro,
                     cidade, 
-                    estado, 
+                    estado,
                     estado_sigla,
                     cargo,
                     salario
@@ -212,17 +212,23 @@ def generate_cars(qt:int, output):
     dados = []
     for i in range(qt):
         data_atualizacao = faker.date()
-        ano_modelo = faker.year()
+        ano_modelo = (faker.date_of_birth(maximum_age=10)).strftime("%Y")
         cor = faker.safe_color_name().title()
         placa = faker.license_plate()
         marca = dl.marcas_carros[random.randrange(0,len(dl.marcas_carros))]
         valor = round(random.uniform(15000.50, 65000.50), 2)
         
+        estadoSigla = faker.estado()
+        estado_sigla = estadoSigla[0]
+        estado = estadoSigla[1]
+
         dados_faker = (
                     data_atualizacao,
                     ano_modelo,
                     cor,
                     placa,
+                    estado,
+                    estado_sigla,
                     marca,
                     valor
                    )
@@ -235,6 +241,8 @@ def generate_cars(qt:int, output):
             'ano_modelo',
             'cor',
             'placa',
+            'estado_emp',
+            'UF_emp',
             'marca',
             'valor'
             ]
@@ -256,11 +264,14 @@ def generate_trafic_networks(qt:int, output):
         uri_acesso = faker.uri()
         ipv4_origem = faker.ipv4_public()
         ipv6_origem = faker.ipv6()
-        estado_origem = faker.estado_nome()
+        # estado_origem = faker.estado_nome()
         hostname = faker.hostname()
         email = faker.free_email()
         qt_acesso = random.randint(2,358)
 
+        estadoSigla = faker.estado()
+        estado_sigla = estadoSigla[0]
+        estado = estadoSigla[1]
         
         dados_faker = (
                     data_acesso,
@@ -268,7 +279,8 @@ def generate_trafic_networks(qt:int, output):
                     ipv4_origem,
                     ipv6_origem,
                     hostname,
-                    estado_origem,
+                    estado,
+                    estado_sigla,
                     email,
                     qt_acesso
 
@@ -284,11 +296,114 @@ def generate_trafic_networks(qt:int, output):
             'ipv6_origem',
             'hostname',
             'estado_origem',
+            'UF_origem'
             'email',
             'qt_acesso'
             ]
 
     # # Criando o DF e nomeando as colunas
+    df = pd.DataFrame(dados, columns=cols)
+
+    if output == 'LISTA':
+        return(dados)
+    elif output == 'PANDAS':
+        return(df)
+# %%
+def generate_books(qt:int, output):
+    
+
+    dados = []
+    for i in range(qt):
+        ano_publicacao = faker.year()
+        nome_livro = faker.catch_phrase()
+        autor = faker.name()
+        estoque = random.randint(1,18)
+        valor = round(random.uniform(12.32, 126.50), 2)
+
+
+        
+        dados_faker = (
+                    ano_publicacao,
+                    nome_livro,
+                    autor,
+                    estoque,
+                    valor
+                   )
+
+        dados.append(dados_faker)
+
+    # Colunas do Dataframe
+    cols = [
+            'ano_pub',
+            'nome_livro',
+            'autor',
+            'estoque',
+            'valor'
+            ]
+
+    # # Criando o DF e nomeando as colunas
+    df = pd.DataFrame(dados, columns=cols)
+
+    if output == 'LISTA':
+        return(dados)
+    elif output == 'PANDAS':
+        return(df)
+# %%
+def generate_products(qt:int, output, index=None):
+    
+    
+
+    dados = []
+    for i in range(qt):
+        id = i
+        data_fabricacao = (faker.date_of_birth(maximum_age=5)).strftime("%Y-%m-%d")
+        produto = dl.produtos[random.randrange(0,len(dl.produtos))]
+        estoque = random.randint(1,18)
+        valor = round(random.uniform(12.32, 126.50), 2)
+        garantia = random.randint(1,18)
+
+        if index == None:
+            dados_faker = (                     
+                    data_fabricacao,
+                    produto,
+                    estoque,
+                    valor,
+                    garantia
+                   )
+        else:
+            dados_faker = (  
+                    id,                   
+                    data_fabricacao,
+                    produto,
+                    estoque,
+                    valor,
+                    garantia
+                   )
+
+        dados.append(dados_faker)
+
+
+    if index == None:   
+    # Colunas do Dataframe
+        cols = [
+                'data_fabricacao',
+                'produto',
+                'estoque',
+                'valor',
+                'garantia_meses'
+                ]
+
+    else:
+        cols = [
+                'id',
+                'data_fabricacao',
+                'produto',
+                'estoque',
+                'valor',
+                'garantia_meses'
+                ]
+        
+
     df = pd.DataFrame(dados, columns=cols)
 
     if output == 'LISTA':
