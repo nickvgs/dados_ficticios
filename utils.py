@@ -206,8 +206,12 @@ def generate_clients(qt:int, output):
 
 # %%
 
+<<<<<<< HEAD
 def generate_cars(qt:int, output):
     
+=======
+# test
+>>>>>>> 86590ece89b648231513bf7a7a3e161a75bf008c
 
     dados = []
     for i in range(qt):
