@@ -3,6 +3,10 @@ import mysql.connector
 from mysql.connector import Error
 import pandas as pd
 from faker import Faker
+import random
+import decimal
+import data_list as dl
+
 faker = Faker('pt_BR')
 
 #%%
@@ -17,9 +21,10 @@ def conexao(keysdb:str):
         password (str): senha
     """    
     connection = mysql.connector.connect(host = keysdb[0],
-                                         database= keysdb[1],
-                                         user = keysdb[2],
-                                         password= keysdb[3]
+                                         port = keysdb[1],
+                                         database= keysdb[2],
+                                         user = keysdb[3],
+                                         password= keysdb[4]
                                          )
     return(connection)
 
@@ -135,7 +140,7 @@ def send_mysql(table, df, keysdb, action="INSERT"):
 
 
 # %%
-def faker_generate(qt:int, output):
+def generate_clients(qt:int, output):
     
     # Loop para criar as linhas de dados e adicionas a uma lista
     dados = []
@@ -151,8 +156,7 @@ def faker_generate(qt:int, output):
         estado = faker.state()
         estado_sigla = faker.estado_sigla()
         cargo = faker.job()
-        # coments = faker.text()
-        # ipv4 = faker.ipv4_private()
+        salario = round(random.uniform(1300.15, 6300.89), 2)
         
         
         
@@ -167,7 +171,9 @@ def faker_generate(qt:int, output):
                     cidade, 
                     estado, 
                     estado_sigla,
-                    cargo
+                    cargo,
+                    salario
+
                     )
 
         dados.append(dados_faker)
@@ -184,7 +190,8 @@ def faker_generate(qt:int, output):
             'cidade',
             'estado', 
             'estado_sigla',
-            'cargo'
+            'cargo',
+            'salario'
             ]
 
     # # Criando o DF e nomeando as colunas
@@ -199,5 +206,93 @@ def faker_generate(qt:int, output):
 
 # %%
 
+def generate_cars(qt:int, output):
+    
 
+    dados = []
+    for i in range(qt):
+        data_atualizacao = faker.date()
+        ano_modelo = faker.year()
+        cor = faker.safe_color_name().title()
+        placa = faker.license_plate()
+        marca = dl.marcas_carros[random.randrange(0,len(dl.marcas_carros))]
+        valor = round(random.uniform(15000.50, 65000.50), 2)
+        
+        dados_faker = (
+                    data_atualizacao,
+                    ano_modelo,
+                    cor,
+                    placa,
+                    marca,
+                    valor
+                   )
+
+        dados.append(dados_faker)
+
+    # Colunas do Dataframe
+    cols = [
+            'data_atualizacao',
+            'ano_modelo',
+            'cor',
+            'placa',
+            'marca',
+            'valor'
+            ]
+
+    # # Criando o DF e nomeando as colunas
+    df = pd.DataFrame(dados, columns=cols)
+
+    if output == 'LISTA':
+        return(dados)
+    elif output == 'PANDAS':
+        return(df)
+# %%
+def generate_trafic_networks(qt:int, output):
+    
+
+    dados = []
+    for i in range(qt):
+        data_acesso = faker.date()
+        uri_acesso = faker.uri()
+        ipv4_origem = faker.ipv4_public()
+        ipv6_origem = faker.ipv6()
+        estado_origem = faker.estado_nome()
+        hostname = faker.hostname()
+        email = faker.free_email()
+        qt_acesso = random.randint(2,358)
+
+        
+        dados_faker = (
+                    data_acesso,
+                    uri_acesso,
+                    ipv4_origem,
+                    ipv6_origem,
+                    hostname,
+                    estado_origem,
+                    email,
+                    qt_acesso
+
+                   )
+
+        dados.append(dados_faker)
+
+    # Colunas do Dataframe
+    cols = [
+            'data_acesso',
+            'uri_acesso',
+            'ipv4_origem',
+            'ipv6_origem',
+            'hostname',
+            'estado_origem',
+            'email',
+            'qt_acesso'
+            ]
+
+    # # Criando o DF e nomeando as colunas
+    df = pd.DataFrame(dados, columns=cols)
+
+    if output == 'LISTA':
+        return(dados)
+    elif output == 'PANDAS':
+        return(df)
 # %%
