@@ -1,7 +1,7 @@
 # %%
 import utils
 # %%
-keysdb = ['localhost',3307,'db_biblioteca','pycode','admin123']
+keysdb = []
 # %%
 df_read = utils.query_mysql('autor', keysdb )
 df_read
@@ -21,4 +21,13 @@ df_faker
 # %%
 
 utils.send_mysql('clientes', df_faker, keysdb,'UPSERT')
+# %%
+keysdb = {
+        'host':'localhost',
+        'port':'3307',
+        'database':'db_escola',
+        'user':'pycode',
+        'password':'admin123'}
+
+utils.query_mysql('alunos', keysdb)
 # %%

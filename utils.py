@@ -1,5 +1,6 @@
 # %%
 import mysql.connector
+from mysql.connector import connection
 from mysql.connector import Error
 import pandas as pd
 from faker import Faker
@@ -10,8 +11,8 @@ import data_list as dl
 faker = Faker('pt_BR')
 
 #%%
-# Funcções de Negócio
-def conexao(keysdb:str):
+# Função de Conexão 
+def conexao(keys:dict):
     """Realiza a conexao com o banco inserido chamado pelas outras funcoes
 
     Args:
@@ -20,51 +21,12 @@ def conexao(keysdb:str):
         user (str): usuario
         password (str): senha
     """    
-    connection = mysql.connector.connect(host = keysdb[0],
-                                         port = keysdb[1],
-                                         database= keysdb[2],
-                                         user = keysdb[3],
-                                         password= keysdb[4]
-                                         )
-    return(connection)
+    con = connection.MySQLConnection(**keys)
 
-
-def insert_mysql(table, df, keysdb ):
-    """_summary_
-
-    Args:
-        table (_type_): _description_
-        df (_type_): _description_
-        keysdb (_type_): _description_
-    """    
-    try:
-        connection = conexao(keysdb)
-        cursor = connection.cursor()
-
-        cols = ', '.join(df.columns)
-        records = [tuple(row) for row in df.values]
-
-        query = f"INSERT INTO {table} ({cols}) VALUES ({', '.join(['%s'] * len(df.columns))})"
-        
-        
-        cursor.executemany(query, records)
-        connection.commit()
- 
-        print(f'''Records inserted successfully 
-                into {df.data_atualizacao.count()} registers in {table} table'''
-                )
-
-    except mysql.connector.Error as error:
-        print("Failed to insert into MySQL table {}".format(error))
-
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("MySQL connection is closed")
-
-
-def query_mysql(table, keysdb:list):
+    return(con)
+# %%
+# Função de Consulta 
+def query_mysql(table, keys:dict):
     """ Realiza a consulta no banco de dados MySQL
 
     Args:
@@ -74,8 +36,8 @@ def query_mysql(table, keysdb:list):
 
     try:
             
-        connection = conexao(keysdb)
-        cursor = connection.cursor()
+        con = conexao(keys)
+        cursor = con.cursor()
 
         query = f"SELECT * FROM {table}"
 
@@ -90,18 +52,18 @@ def query_mysql(table, keysdb:list):
         print("Failed to query into MySQL table {}".format(error))
 
     finally:
-            if connection.is_connected():
+            if con.is_connected():
                 cursor.close()
-                connection.close()
+                con.close()
                 print("MySQL connection is closed")
     return(dados)
 
 # %%
-
+#Função de INSERT e UPDATE (UPSERT)
 def send_mysql(table, df, keysdb, action="INSERT"):
 
     # Create a connection to the database
-    connection = conexao(keysdb)
+    con = conexao(keysdb)
 
     # Convert the dataframe to a list of dictionaries
     data = df.to_dict(orient='records')
@@ -110,7 +72,7 @@ def send_mysql(table, df, keysdb, action="INSERT"):
     placeholders = ', '.join(['%s'] * len(df.columns))
 
     # Perform the update
-    with connection.cursor() as cursor:
+    with con.cursor() as cursor:
         if action == "UPSERT":
             columns = [column for column in df.columns if column != "id"]
             sql = f'''
@@ -133,18 +95,20 @@ def send_mysql(table, df, keysdb, action="INSERT"):
             raise Exception("Invalid action")
 
     # Commit the changes
-    connection.commit()
+    con.commit()
 
     # Close the connection
-    connection.close()
+    con.close()
 
 
 # %%
-def generate_clients(qt:int, output):
+# Função de gerar dados ficticios de clientes
+
+def gen_clients(quantidade:int, output='pandas'):
     
     # Loop para criar as linhas de dados e adicionas a uma lista
     dados = []
-    for i in range(qt):
+    for i in range(quantidade):
         data_atualizacao = (faker.date_of_birth(maximum_age=1)).strftime("%Y-%m-%d")
         nome = faker.name()
         telefone = faker.phone_number()
@@ -197,20 +161,20 @@ def generate_clients(qt:int, output):
     # # Criando o DF e nomeando as colunas
     df = pd.DataFrame(dados, columns=cols)
 
-    if output == 'LISTA':
+    if output == 'lista':
         return(dados)
-    elif output == 'PANDAS':
+    elif output == 'pandas':
         return(df)
 
 
 
 # %%
-
-def generate_cars(qt:int, output):
+# Função de gerar dados ficticios de carros
+def gen_cars(quantidade:int, output):
     
 
     dados = []
-    for i in range(qt):
+    for i in range(quantidade):
         data_atualizacao = faker.date()
         ano_modelo = (faker.date_of_birth(maximum_age=10)).strftime("%Y")
         cor = faker.safe_color_name().title()
@@ -250,16 +214,17 @@ def generate_cars(qt:int, output):
     # # Criando o DF e nomeando as colunas
     df = pd.DataFrame(dados, columns=cols)
 
-    if output == 'LISTA':
+    if output == 'lista':
         return(dados)
-    elif output == 'PANDAS':
+    elif output == 'pandas':
         return(df)
 # %%
-def generate_trafic_networks(qt:int, output):
+# Função de gerar dados ficticios de trafego de rede
+def gen_trafic_networks(quantidade:int, output='pandas'):
     
 
     dados = []
-    for i in range(qt):
+    for i in range(quantidade):
         data_acesso = faker.date()
         uri_acesso = faker.uri()
         ipv4_origem = faker.ipv4_public()
@@ -267,7 +232,7 @@ def generate_trafic_networks(qt:int, output):
         # estado_origem = faker.estado_nome()
         hostname = faker.hostname()
         email = faker.free_email()
-        qt_acesso = random.randint(2,358)
+        quantidade_acesso = random.randint(2,358)
 
         estadoSigla = faker.estado()
         estado_sigla = estadoSigla[0]
@@ -282,7 +247,7 @@ def generate_trafic_networks(qt:int, output):
                     estado,
                     estado_sigla,
                     email,
-                    qt_acesso
+                    quantidade_acesso
 
                    )
 
@@ -298,22 +263,23 @@ def generate_trafic_networks(qt:int, output):
             'estado_origem',
             'UF_origem'
             'email',
-            'qt_acesso'
+            'quantidade_acesso'
             ]
 
     # # Criando o DF e nomeando as colunas
     df = pd.DataFrame(dados, columns=cols)
 
-    if output == 'LISTA':
+    if output == 'lista':
         return(dados)
-    elif output == 'PANDAS':
+    elif output == 'pandas':
         return(df)
 # %%
-def generate_books(qt:int, output):
+# Função de gerar dados ficticios livros
+def gen_books(quantidade:int, output='pandas'):
     
 
     dados = []
-    for i in range(qt):
+    for i in range(quantidade):
         ano_publicacao = faker.year()
         nome_livro = faker.catch_phrase()
         autor = faker.name()
@@ -341,21 +307,27 @@ def generate_books(qt:int, output):
             'valor'
             ]
 
-    # # Criando o DF e nomeando as colunas
-    df = pd.DataFrame(dados, columns=cols)
 
-    if output == 'LISTA':
+
+    if output == 'lista':
         return(dados)
-    elif output == 'PANDAS':
+    elif output == 'pandas':
+        # Criando o DF e nomeando as colunas
+        df = pd.DataFrame(dados, columns=cols)
         return(df)
 # %%
-def generate_products(qt:int, output, index=None):
+def gen_products(quantidade:int, output='pandas', index=None):
     
-    
+    ix = 0
+    if index == None:
+        ix == 0
+    else:
+        ix = index
+   
 
     dados = []
-    for i in range(qt):
-        id = i
+    for i in range(quantidade):
+        id = ix + i
         data_fabricacao = (faker.date_of_birth(maximum_age=5)).strftime("%Y-%m-%d")
         produto = dl.produtos[random.randrange(0,len(dl.produtos))]
         estoque = random.randint(1,18)
@@ -382,32 +354,31 @@ def generate_products(qt:int, output, index=None):
 
         dados.append(dados_faker)
 
-
-    if index == None:   
-    # Colunas do Dataframe
-        cols = [
-                'data_fabricacao',
-                'produto',
-                'estoque',
-                'valor',
-                'garantia_meses'
-                ]
-
-    else:
-        cols = [
-                'id',
-                'data_fabricacao',
-                'produto',
-                'estoque',
-                'valor',
-                'garantia_meses'
-                ]
         
 
-    df = pd.DataFrame(dados, columns=cols)
-
-    if output == 'LISTA':
+    if output == 'lista':
         return(dados)
-    elif output == 'PANDAS':
+    elif output == 'pandas':
+
+        if index == None:   
+    
+            cols = [
+                    'data_fabricacao',
+                    'produto',
+                    'estoque',
+                    'valor',
+                    'garantia_meses'
+                    ]
+
+        else:
+            cols = [
+                    'id',
+                    'data_fabricacao',
+                    'produto',
+                    'estoque',
+                    'valor',
+                    'garantia_meses'
+                    ]
+        df = pd.DataFrame(dados, columns=cols)
         return(df)
 # %%
